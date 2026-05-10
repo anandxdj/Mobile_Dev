@@ -4,11 +4,6 @@ import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 export default function SocialLogin() {
   return (
     <View style={styles.container}>
-      <View style={styles.dividerContainer}>
-        <View style={styles.divider} />
-        <Text style={styles.dividerText}>Or continue with</Text>
-        <View style={styles.divider} />
-      </View>
 
       <View style={styles.socialIconsContainer}>
         <TouchableOpacity style={styles.socialButton}>
