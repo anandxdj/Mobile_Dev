@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
   },
   link: {
     fontSize: 15,
-    color: '#0ee9a4',
+    color: '#85cc17',
     fontWeight: 'bold',
   },
 });

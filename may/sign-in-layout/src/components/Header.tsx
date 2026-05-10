@@ -11,7 +11,7 @@ export default function Header() {
 
       <Text style={styles.title}>Sign In</Text>
       <Text style={styles.subtitle}>
-        Let's experience the joy Of telecare Al.
+        Let's experience the joy of telecare Al.
       </Text>
     </View>
   );
