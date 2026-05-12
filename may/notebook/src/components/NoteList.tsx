@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
-  ScrollView,
+  FlatList,
+  TextInput,
+  Switch,
+  useWindowDimensions,
 } from 'react-native';
 import { Note } from '../types';
 
@@ -23,101 +26,99 @@ const NoteList: React.FC<NoteListProps> = ({
   isDarkMode,
   onToggleTheme,
 }) => {
+  const { width } = useWindowDimensions();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Responsive columns: 2 for phones, 3 for tablets/desktop
+  const numColumns = width > 768 ? 3 : 2;
 
   const textColor = isDarkMode ? '#ffffff' : '#1a1a1a';
   const btnBg = isDarkMode ? '#333333' : '#e5e5ea';
   const btnText = isDarkMode ? '#ffffff' : '#1a1a1a';
 
+  const filteredNotes = notes.filter((note) =>
+    note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    note.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const renderHeader = () => (
-    <View style={styles.header}>
-      <View style={styles.headerLeft}>
+    <View style={styles.headerSection}>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.headerTitle, { color: textColor }]}>Notes</Text>
+        </View>
+        <View style={styles.headerRight}>
+          <Pressable style={[styles.iconButton, { backgroundColor: btnBg }]} onPress={onToggleTheme}>
+            <Text style={[styles.iconTextEmoji, { color: btnText }]}>{isDarkMode ? '☀️' : '🌙'}</Text>
+          </Pressable>
+          <Pressable style={[styles.iconButton, { backgroundColor: btnBg }]} onPress={onAddNote}>
+            <Text style={[styles.iconText, { color: btnText }]}>+</Text>
+          </Pressable>
+        </View>
+      </View>
       
-        <Text style={[styles.headerTitle, { color: textColor }]}>Notes</Text>
-      </View>
-      <View style={styles.headerRight}>
-        <Pressable style={[styles.iconButton, { backgroundColor: btnBg }]} onPress={onToggleTheme}>
-          <Text style={[styles.iconTextEmoji, { color: btnText }]}>{isDarkMode ? '☀️' : '🌙'}</Text>
-        </Pressable>
-        <Pressable style={[styles.iconButton, { backgroundColor: btnBg }]} onPress={onAddNote}>
-          <Text style={[styles.iconText, { color: btnText }]}>+</Text>
-        </Pressable>
-      </View>
+      <TextInput
+        style={[
+          styles.searchInput,
+          { 
+            backgroundColor: isDarkMode ? '#2c2c2e' : '#e5e5ea',
+            color: textColor 
+          }
+        ]}
+        placeholder="Search notes..."
+        placeholderTextColor={isDarkMode ? '#8e8e93' : '#8e8e93'}
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
     </View>
   );
 
-  const renderCard = (note: Note) => {
-    // Determine card height based on size
-    let minHeight = 160;
-    if (note.size === 'tall') minHeight = 220;
-    if (note.size === 'full') minHeight = 140;
-
-    const cardBgColor = isDarkMode ? '#2c2c2e' : note.color;
+  const renderCard = ({ item: note }: { item: Note }) => {
+    // Fulfill assignment requirement: Use StyleSheet.compose
+    const dynamicCardStyle = {
+      backgroundColor: isDarkMode ? '#2c2c2e' : note.color,
+      marginRight: 12,
+      marginBottom: 12,
+      flex: 1, // ensure it fills the column evenly
+      maxWidth: `${100 / numColumns}%`, // prevent flex growing infinitely when final row is incomplete
+    };
+    
+    const composedCardStyle = StyleSheet.compose(styles.cardBase, dynamicCardStyle);
+    
     const cardTextColor = isDarkMode ? '#ffffff' : '#1a1a1a';
-    const dateColor = isDarkMode ? '#cccccc' : '#1a1a1a';
+    const subTextColor = isDarkMode ? '#cccccc' : '#1a1a1a';
 
     return (
       <Pressable
-        key={note.id}
-        style={[styles.card, { backgroundColor: cardBgColor, minHeight }]}
+        style={composedCardStyle}
         onPress={() => onOpenNote(note)}
       >
-        <Text style={[styles.cardTitle, { color: cardTextColor }]}>{note.title}</Text>
+        <Text style={[styles.cardTitle, { color: cardTextColor }]} numberOfLines={2}>
+          {note.title}
+        </Text>
+        <Text style={[styles.cardPreview, { color: subTextColor }]} numberOfLines={2}>
+          {note.content}
+        </Text>
         <View style={styles.cardBottom}>
-          <Text style={[styles.dateText, { color: dateColor }]}>{note.date}</Text>
+          <Text style={[styles.dateText, { color: subTextColor }]}>{note.date}</Text>
         </View>
       </Pressable>
     );
   };
 
-  const renderMasonry = () => {
-    const sections: React.ReactNode[] = [];
-    let leftCol: Note[] = [];
-    let rightCol: Note[] = [];
-
-    const flushCols = (keySuffix: string) => {
-      if (leftCol.length > 0 || rightCol.length > 0) {
-        sections.push(
-          <View key={`cols-${keySuffix}`} style={styles.columnsContainer}>
-            <View style={styles.column}>
-              {leftCol.map(renderCard)}
-            </View>
-            <View style={styles.column}>
-              {rightCol.map(renderCard)}
-            </View>
-          </View>
-        );
-        leftCol = [];
-        rightCol = [];
-      }
-    };
-
-    notes.forEach((note, index) => {
-      if (note.size === 'full') {
-        flushCols(`pre-full-${index}`);
-        sections.push(
-          <View key={`full-${note.id}`} style={styles.fullWidthContainer}>
-            {renderCard(note)}
-          </View>
-        );
-      } else {
-        // Alternate columns
-        if (leftCol.length <= rightCol.length) {
-          leftCol.push(note);
-        } else {
-          rightCol.push(note);
-        }
-      }
-    });
-    flushCols('end');
-
-    return sections;
-  };
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      {renderHeader()}
-      {renderMasonry()}
-    </ScrollView>
+    <View style={styles.container}>
+      <FlatList
+        data={filteredNotes}
+        key={numColumns} // Force re-render if columns change
+        keyExtractor={(item) => item.id}
+        renderItem={renderCard}
+        numColumns={numColumns}
+        ListHeaderComponent={renderHeader}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 };
 
@@ -125,27 +126,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
+  listContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 40,
+  },
+  headerSection: {
+    marginBottom: 16,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
-    paddingTop: 8,
+    marginBottom: 16,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  chevron: {
-    fontSize: 28,
-    fontWeight: '300',
-    marginTop: -4,
   },
   headerTitle: {
     fontSize: 36,
@@ -154,6 +152,7 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   iconButton: {
@@ -168,44 +167,39 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     marginTop: -2,
   },
-  iconTextEmoji: {
-    fontSize: 18,
+  searchInput: {
+    height: 48,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
   },
-  columnsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 12,
-  },
-  column: {
-    flex: 1,
-    gap: 12,
-  },
-  fullWidthContainer: {
-    marginBottom: 12,
-  },
-  card: {
+  cardBase: {
     borderRadius: 24,
     padding: 20,
+    minHeight: 160,
     justifyContent: 'space-between',
   },
   cardTitle: {
     fontSize: 20,
     fontWeight: '500',
-    color: '#1a1a1a',
     lineHeight: 26,
+    marginBottom: 8,
+  },
+  cardPreview: {
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.8,
   },
   cardBottom: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'flex-end',
-    marginTop: 20,
+    marginTop: 16,
   },
   dateText: {
-    fontSize: 14,
-    color: '#1a1a1a',
+    fontSize: 12,
     fontWeight: '500',
-    opacity: 0.8,
+    opacity: 0.7,
   },
 });
 

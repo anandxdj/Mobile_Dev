@@ -7,6 +7,7 @@ import {
   Text,
   KeyboardAvoidingView,
   Platform,
+  ImageBackground,
 } from 'react-native';
 import { Note, NoteSize } from '../types';
 
@@ -44,11 +45,10 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   }, [note]);
 
   const handleSave = () => {
-    // Basic logic to guess size based on content length or title length
     let size: NoteSize = 'small';
     if (content.length > 100) size = 'tall';
     if (title.length > 25) size = 'full';
-    if (note) size = note.size; // preserve existing size if editing
+    if (note) size = note.size;
 
     const newNote: Note = {
       id: note ? note.id : Date.now().toString(),
@@ -63,29 +63,37 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
 
   const bgColor = isDarkMode ? '#1a1a1a' : '#f2f2f7';
   const textColor = isDarkMode ? '#ffffff' : '#1a1a1a';
-  const headerBtnText = isDarkMode ? '#ffffff' : '#1a1a1a';
   const placeholderColor = isDarkMode ? '#666666' : '#999999';
+
+  // Fulfill assignment requirement: Use StyleSheet.flatten
+  const flatContainerStyle = StyleSheet.flatten([styles.container, { backgroundColor: bgColor }]);
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: bgColor }]}
+      style={flatContainerStyle}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.header}>
-        <Pressable onPress={onCancel} style={styles.headerBtn}>
-          <Text style={[styles.headerBtnText, { color: headerBtnText }]}>Cancel</Text>
-        </Pressable>
-        <View style={styles.headerRight}>
-          {onDelete && (
-            <Pressable onPress={onDelete} style={styles.headerBtn}>
-              <Text style={[styles.headerBtnText, { color: '#ef5350' }]}>Delete</Text>
-            </Pressable>
-          )}
-          <Pressable onPress={handleSave} style={[styles.saveBtn, { backgroundColor: color }]}>
-            <Text style={styles.saveBtnText}>Save</Text>
+      <ImageBackground 
+        source={{ uri: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop' }} 
+        style={styles.headerBg}
+        imageStyle={{ borderRadius: 16 }}
+      >
+        <View style={styles.header}>
+          <Pressable onPress={onCancel} style={styles.headerBtn}>
+            <Text style={styles.headerBtnText}>Cancel</Text>
           </Pressable>
+          <View style={styles.headerRight}>
+            {onDelete && (
+              <Pressable onPress={onDelete} style={styles.headerBtn}>
+                <Text style={[styles.headerBtnText, { color: '#ff8a80' }]}>Delete</Text>
+              </Pressable>
+            )}
+            <Pressable onPress={handleSave} style={[styles.saveBtn, { backgroundColor: color }]}>
+              <Text style={styles.saveBtnText}>Save</Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </ImageBackground>
 
       <View style={styles.colorPicker}>
         {COLORS.map(c => (
@@ -125,11 +133,16 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 20,
   },
+  headerBg: {
+    marginBottom: 24,
+    padding: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
   },
   headerRight: {
     flexDirection: 'row',
@@ -141,7 +154,11 @@ const styles = StyleSheet.create({
   },
   headerBtnText: {
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: '600',
+    color: '#ffffff', // Always white since it's on a dark image background
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   saveBtn: {
     paddingHorizontal: 20,
@@ -149,7 +166,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   saveBtnText: {
-    color: '#1a1a1a', // Save button text is always dark since cards are bright
+    color: '#1a1a1a', 
     fontSize: 16,
     fontWeight: 'bold',
   },
